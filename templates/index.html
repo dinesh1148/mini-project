@@ -1,151 +1,731 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Assistive Vision</title>
-    <!-- Use Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart Assistive Vision</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --c1:#ff6b9d;--c2:#a855f7;--c3:#06b6d4;--c4:#10b981;--c5:#f59e0b;--c6:#f43f5e;
+  --bg:#05080f;--bg2:#0a0f1e;--bg3:#0f1628;--card:#0d1420;
+  --border:rgba(168,85,247,0.18);--border2:rgba(6,182,212,0.25);
+  --text:#eef2ff;--muted:#3d4a5c;--sub:#7a8fa8;
+  --font:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);overflow-x:hidden}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 700px 500px at 5% 10%,rgba(168,85,247,0.06) 0%,transparent 70%),
+    radial-gradient(ellipse 600px 400px at 95% 90%,rgba(6,182,212,0.06) 0%,transparent 70%),
+    radial-gradient(ellipse 500px 500px at 50% 40%,rgba(255,107,157,0.03) 0%,transparent 70%);
+}
+.app{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column}
+
+/* HEADER */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1rem 2rem;border-bottom:1px solid var(--border);
+  background:rgba(5,8,15,0.9);backdrop-filter:blur(20px);
+  position:sticky;top:0;z-index:200;
+}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-orbit{
+  width:42px;height:42px;border-radius:50%;border:2px solid var(--c2);
+  display:flex;align-items:center;justify-content:center;position:relative;
+}
+.logo-orbit::after{
+  content:'';position:absolute;width:8px;height:8px;border-radius:50%;
+  background:var(--c1);top:-4px;left:50%;transform:translateX(-50%);
+  animation:orbit 3s linear infinite;transform-origin:0 25px;
+}
+@keyframes orbit{to{transform:rotate(360deg) translateY(-21px)}}
+.logo-orbit svg{width:22px;height:22px;stroke:var(--c2);fill:none;stroke-width:2}
+.logo-name{font-size:1.1rem;font-weight:800;letter-spacing:.02em}
+.logo-name .g{
+  background:linear-gradient(90deg,var(--c1) 0%,var(--c2) 40%,var(--c3) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hdr-right{display:flex;align-items:center;gap:12px}
+.sys-pill{
+  display:flex;align-items:center;gap:7px;padding:5px 14px;border-radius:999px;
+  border:1px solid var(--border);background:rgba(13,20,32,0.8);
+  font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--sub);transition:all .4s;
+}
+.sys-pill.on{border-color:var(--c4);color:var(--c4);background:rgba(16,185,129,.08)}
+.sys-pill .d{width:6px;height:6px;border-radius:50%;background:var(--muted);transition:background .4s}
+.sys-pill.on .d{background:var(--c4);animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* HERO */
+.hero{display:flex;align-items:center;gap:2rem;padding:2rem 2rem 1rem;flex-wrap:wrap}
+.hero-copy{flex:1;min-width:260px}
+.badge{
+  display:inline-flex;align-items:center;gap:7px;margin-bottom:1rem;
+  padding:4px 14px;border-radius:999px;
+  background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.35);
+  font-size:.7rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--c2);
+}
+.badge .bd{width:5px;height:5px;border-radius:50%;background:var(--c2);animation:blink .9s infinite}
+h1{font-size:clamp(1.9rem,4vw,3rem);font-weight:900;line-height:1.05;margin-bottom:.8rem}
+.l1{color:var(--text)}
+.l2{background:linear-gradient(90deg,var(--c1),var(--c2),var(--c3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.l3{color:var(--c4)}
+.hero-desc{font-size:.9rem;color:var(--sub);line-height:1.75;max-width:400px}
+
+/* SCENE */
+.scene-wrap{
+  flex:0 0 440px;height:290px;border-radius:18px;
+  border:1px solid var(--border);background:#060c18;
+  position:relative;overflow:hidden;
+}
+canvas#scene{position:absolute;inset:0;width:100%;height:100%}
+.scene-label{
+  position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+  font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:rgba(168,85,247,.5);white-space:nowrap;font-family:var(--mono);
+}
+
+/* TICKER */
+.ticker{
+  margin:.75rem 2rem 0;border-radius:10px;
+  background:var(--bg2);border:1px solid var(--border2);
+  display:flex;align-items:center;gap:12px;padding:.55rem 1.2rem;
+}
+.ticker-lbl{
+  display:flex;align-items:center;gap:6px;font-size:.68rem;font-weight:700;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--c3);
+  white-space:nowrap;padding-right:12px;border-right:1px solid var(--border2);
+}
+.ticker-lbl .d{width:5px;height:5px;border-radius:50%;background:var(--c3);animation:blink .7s infinite}
+#tick-txt{font-family:var(--mono);font-size:.8rem;color:var(--text)}
+#tick-txt span{display:inline-block;animation:slidein .35s ease}
+@keyframes slidein{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+
+/* STATUS STRIP */
+.strip{
+  margin:.75rem 2rem 0;border-radius:10px;
+  background:var(--bg2);border:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;padding:.5rem 1.2rem;
+}
+.strip-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);transition:background .4s}
+.strip-dot.on{background:var(--c4);animation:blink .9s infinite}
+.strip-txt{font-family:var(--mono);font-size:.75rem;color:var(--sub);transition:color .4s}
+.strip-txt.on{color:var(--c4)}
+.strip-sep{flex:1}
+.strip-tag{font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+/* MAIN GRID */
+.grid{display:grid;grid-template-columns:1fr 360px;gap:1.2rem;padding:1.2rem 2rem 2rem}
+
+/* CAM CARD */
+.cam{border-radius:15px;border:1px solid var(--border);background:var(--card);overflow:hidden;display:flex;flex-direction:column}
+.cam-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.7rem 1.1rem;border-bottom:1px solid var(--border);
+}
+.cam-bar-l{display:flex;align-items:center;gap:10px}
+.cam-lbl{font-family:var(--mono);font-size:.72rem;font-weight:600;letter-spacing:.08em;color:var(--sub);text-transform:uppercase}
+.rec{
+  display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;
+  background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.25);
+  font-size:.63rem;font-weight:700;letter-spacing:.08em;color:var(--c6);text-transform:uppercase;
+}
+.rec .d{width:5px;height:5px;border-radius:50%;background:var(--c6)}
+.rec.live .d{animation:blink .7s infinite}
+.tags{display:flex;gap:6px}
+.tg{
+  padding:3px 10px;border-radius:999px;font-size:.62rem;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.tg-c{background:rgba(6,182,212,.1);color:var(--c3);border:1px solid rgba(6,182,212,.25)}
+.tg-p{background:rgba(168,85,247,.1);color:var(--c2);border:1px solid rgba(168,85,247,.25)}
+.feed-box{
+  position:relative;flex:1;min-height:300px;background:#000;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+#vf{width:100%;height:100%;object-fit:cover;display:none}
+#vf.v{display:block}
+.feed-idle{display:flex;flex-direction:column;align-items:center;gap:14px;color:var(--muted)}
+.feed-idle.h{display:none}
+.idle-ring{
+  width:76px;height:76px;border-radius:50%;
+  border:2px dashed rgba(168,85,247,.25);
+  display:flex;align-items:center;justify-content:center;
+  animation:slow-spin 10s linear infinite;
+}
+@keyframes slow-spin{to{transform:rotate(360deg)}}
+.idle-ring svg{width:34px;height:34px;stroke:rgba(168,85,247,.35);fill:none}
+.idle-t{font-size:.78rem;letter-spacing:.04em}
+.scan{
+  position:absolute;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--c3),rgba(6,182,212,.6),var(--c3),transparent);
+  animation:scan 2.5s linear infinite;display:none;pointer-events:none;
+}
+.scan.a{display:block}
+@keyframes scan{0%{top:0;opacity:0}5%{opacity:1}95%{opacity:1}100%{top:100%;opacity:0}}
+.corners .co{position:absolute;width:18px;height:18px;opacity:0;transition:opacity .5s}
+.cam.run .corners .co{opacity:1}
+.co.tl{top:10px;left:10px;border-top:2px solid var(--c2);border-left:2px solid var(--c2)}
+.co.tr{top:10px;right:10px;border-top:2px solid var(--c2);border-right:2px solid var(--c2)}
+.co.bl{bottom:10px;left:10px;border-bottom:2px solid var(--c2);border-left:2px solid var(--c2)}
+.co.br{bottom:10px;right:10px;border-bottom:2px solid var(--c2);border-right:2px solid var(--c2)}
+
+/* SIDE */
+.side{display:flex;flex-direction:column;gap:1rem}
+.card{border-radius:13px;border:1px solid var(--border);background:var(--card);overflow:hidden}
+.chdr{
+  display:flex;align-items:center;gap:8px;padding:.65rem 1rem;
+  border-bottom:1px solid var(--border);
+  font-size:.68rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--sub);
+}
+.chdr::before{content:'';display:inline-block;width:3px;height:13px;border-radius:2px;background:linear-gradient(var(--c1),var(--c2))}
+
+/* STATS */
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(168,85,247,.1)}
+.sv{background:var(--card);padding:.85rem 1rem;display:flex;flex-direction:column;gap:3px}
+.sn{font-family:var(--mono);font-size:1.45rem;font-weight:700;line-height:1}
+.sl{font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.nc1{color:var(--c1)}.nc2{color:var(--c2)}.nc3{color:var(--c3)}.nc4{color:var(--c4)}
+
+/* BUTTONS */
+.cb{padding:1rem;display:flex;flex-direction:column;gap:9px}
+.btn{
+  width:100%;padding:.85rem;border-radius:9px;border:none;
+  font-family:var(--font);font-size:.9rem;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;cursor:pointer;
+  transition:all .2s;
+}
+.btn:disabled{opacity:.3;cursor:not-allowed}
+.btn:not(:disabled):active{transform:scale(.97)}
+.btn-s{background:linear-gradient(135deg,var(--c4) 0%,#059669 100%);color:#fff}
+.btn-s:not(:disabled):hover{box-shadow:0 0 28px rgba(16,185,129,.4)}
+.btn-x{background:transparent;color:var(--c6);border:1.5px solid rgba(244,63,94,.4)}
+.btn-x:not(:disabled):hover{background:rgba(244,63,94,.08);box-shadow:0 0 22px rgba(244,63,94,.2)}
+
+/* LOG */
+.log{padding:.65rem;max-height:210px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.le{height:130px;display:flex;align-items:center;justify-content:center;font-size:.78rem;color:var(--muted);letter-spacing:.04em}
+.li{display:flex;gap:8px;align-items:flex-start;padding:5px 7px;border-radius:6px;animation:slideup .3s ease}
+@keyframes slideup{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.li:nth-child(odd){background:rgba(168,85,247,.04)}
+.lt{font-family:var(--mono);font-size:.62rem;color:var(--muted);padding-top:2px;white-space:nowrap}
+.lm{font-size:.8rem;color:var(--text);line-height:1.5}
+.lc{display:inline-block;padding:1px 6px;border-radius:3px;font-size:.6rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-right:4px}
+.lc-s{background:rgba(168,85,247,.15);color:var(--c2)}
+.lc-o{background:rgba(6,182,212,.15);color:var(--c3)}
+.lc-w{background:rgba(245,158,11,.15);color:var(--c5)}
+
+/* TOAST */
+#toast{
+  position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(10px);
+  background:var(--bg3);border:1px solid var(--c2);color:var(--text);
+  padding:.55rem 1.4rem;border-radius:999px;font-size:.8rem;font-family:var(--mono);
+  opacity:0;transition:all .3s;pointer-events:none;z-index:999;
+}
+#toast.s{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media(max-width:900px){
+  .hero{flex-direction:column;padding:1.2rem}
+  .scene-wrap{flex:1;width:100%;max-width:100%}
+  .grid{grid-template-columns:1fr;padding:1rem}
+  header,.hero,.ticker,.strip,.grid{padding-left:1rem;padding-right:1rem}
+  .ticker,.strip{margin-left:1rem;margin-right:1rem}
+}
+</style>
 </head>
 <body>
+<div class="app">
 
-    <div class="container" role="main">
-        <h1 tabindex="0" style="font-size: 3rem;">Real-Time Object Detection</h1>
-        <p class="subtitle" tabindex="0">Voice Assistance System for Visually Impaired People</p>
-        
-        <div class="illustrations">
-            <div class="icon-wrapper sonar-avatar">
-                <div class="sonar-ring"></div>
-                <div class="sonar-ring delay"></div>
-                <img src="{{ url_for('static', filename='blind_person.png') }}" alt="Visually Impaired Person" class="animated-img float-anim" />
-            </div>
-            <div class="icon-wrapper">
-                <img src="{{ url_for('static', filename='guide_dog.png') }}" alt="Guide Dog Assistance" class="animated-img swing-anim" />
-            </div>
-            <div class="icon-wrapper">
-                <img src="{{ url_for('static', filename='sunglasses.png') }}" alt="Smart Sunglasses" class="animated-img pulse-anim" />
-            </div>
-        </div>
-        
-        <div id="status-indicator" class="status-badge" aria-live="polite" tabindex="0">
-            System Status: Disconnected
-        </div>
-        
-        <div id="caption-box" class="caption-box" aria-live="polite" tabindex="0" style="display: none;">
-            <div class="caption-text" id="caption-text">Waiting for detection...</div>
-            <div class="audio-visualizer">
-                <div class="bar"></div>
-                <div class="bar"></div>
-                <div class="bar"></div>
-                <div class="bar"></div>
-                <div class="bar"></div>
-            </div>
-        </div>
-
-        <div class="btn-container">
-            <button id="btn-start" aria-label="Start System Camera and Voice" onclick="startSystem()">
-                Start 
-            </button>
-            <button id="btn-stop" aria-label="Stop System Camera and Voice" onclick="stopSystem()">
-                Stop
-            </button>
-        </div>
-
-        <div class="video-container" style="margin-top: 20px; text-align: center;">
-            <img id="video-feed" src="" alt="Camera Feed" style="display: none; max-width: 100%; border-radius: 8px; border: 2px solid #ccc;" />
-        </div>
+<header>
+  <div class="logo">
+    <div class="logo-orbit">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M2 12C2 12 6 4 12 4s10 8 10 8-4 8-10 8S2 12 2 12z"/></svg>
     </div>
+    <div class="logo-name"><span class="g">Smart</span> Assistive Vision</div>
+  </div>
+  <div class="hdr-right">
+    <div class="sys-pill" id="spill"><div class="d"></div><span id="spill-txt">Offline</span></div>
+  </div>
+</header>
 
-    <!-- JS for API Control -->
-    <script>
-        const statusIndicator = document.getElementById('status-indicator');
+<div class="hero">
+  <div class="hero-copy">
+    <div class="badge"><div class="bd"></div>AI Object Detection</div>
+    <h1>
+      <div class="l1">Real-Time</div>
+      <div class="l2">Object Detection</div>
+      <div class="l3">Voice Guidance</div>
+    </h1>
+    <p class="hero-desc">Empowering visually impaired individuals with intelligent object recognition and real-time voice guidance — every second, every step of the way.</p>
+  </div>
+  <div class="scene-wrap">
+    <canvas id="scene" width="440" height="290"></canvas>
+    <div class="scene-label" id="scene-lbl">Press START to activate AI detection</div>
+  </div>
+</div>
 
-        async function fetchStatus() {
-            try {
-                const response = await fetch('/status');
-                const data = await response.json();
-                updateUI(data.running, data.latest_speech, data.error, data.camera_ready);
-            } catch (err) {
-                statusIndicator.innerText = "Error: Backend Offline";
-                statusIndicator.className = "status-badge";
-            }
-        }
+<div class="ticker">
+  <div class="ticker-lbl"><div class="d"></div>Live Speech</div>
+  <div id="tick-txt"><span>System ready — press START to begin detection</span></div>
+</div>
 
-        function updateUI(isRunning, latestSpeech, error, cameraReady = false) {
-            const videoFeed = document.getElementById('video-feed');
-            const captionBox = document.getElementById('caption-box');
-            if (error) {
-                statusIndicator.innerText = `Camera Error: ${error}`;
-                statusIndicator.className = "status-badge";
-                videoFeed.style.display = 'none';
-                videoFeed.src = '';
-                captionBox.style.display = 'block';
-                document.getElementById('caption-text').innerText = latestSpeech || error;
-                return;
-            }
+<div class="strip">
+  <div class="strip-dot" id="sdot"></div>
+  <div class="strip-txt" id="stxt">System offline</div>
+  <div class="strip-sep"></div>
+  <div class="strip-tag" id="stag">Standby</div>
+</div>
 
-            if (isRunning) {
-                statusIndicator.innerText = cameraReady
-                    ? "System is active and camera is ready"
-                    : "System is starting";
-                statusIndicator.className = "status-badge active";
-                videoFeed.style.display = 'inline-block';
-                // Display the voice log captions
-                captionBox.style.display = 'block';
-                const capText = document.getElementById('caption-text');
-                if (latestSpeech && capText.innerText !== latestSpeech) {
-                    capText.innerText = latestSpeech;
-                    // Pulse animation to highlight the new speech
-                    captionBox.animate([
-                        { transform: 'scale(1)', boxShadow: '0 0 20px rgba(0, 242, 254, 0.1)', borderColor: 'rgba(0, 242, 254, 0.3)' },
-                        { transform: 'scale(1.05)', boxShadow: '0 0 40px rgba(0, 242, 254, 0.9)', borderColor: 'rgba(0, 242, 254, 1)' },
-                        { transform: 'scale(1)', boxShadow: '0 0 20px rgba(0, 242, 254, 0.1)', borderColor: 'rgba(0, 242, 254, 0.3)' }
-                    ], { duration: 600, easing: 'ease-in-out' });
-                }
-                
-                // Only set src if not already set to prevent reloading the stream unnecessarily
-                if (videoFeed.getAttribute('src') !== '/video_feed') {
-                    videoFeed.src = '/video_feed';
-                }
-            } else {
-                statusIndicator.innerText = "System is currently OFF";
-                statusIndicator.className = "status-badge";
-                videoFeed.style.display = 'none';
-                videoFeed.src = '';
-                captionBox.style.display = 'none';
-                document.getElementById('caption-text').innerText = 'Waiting for detection...';
-            }
-        }
+<div class="grid">
+  <div class="cam" id="camcard">
+    <div class="cam-bar">
+      <div class="cam-bar-l">
+        <div class="cam-lbl">Camera Feed</div>
+        <div class="rec" id="rec"><div class="d"></div><span>Standby</span></div>
+      </div>
+      <div class="tags"><span class="tg tg-c">YOLO v3</span><span class="tg tg-p">Flask</span></div>
+    </div>
+    <div class="feed-box">
+      <img id="vf" src="" alt="Live feed"/>
+      <div class="feed-idle" id="fidl">
+        <div class="idle-ring">
+          <svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="2" y="6" width="20" height="14" rx="3"/><path d="M16 3l4 3M8 3L4 6"/></svg>
+        </div>
+        <div class="idle-t">Camera feed will appear here</div>
+      </div>
+      <div class="scan" id="scn"></div>
+      <div class="corners">
+        <div class="co tl"></div><div class="co tr"></div>
+        <div class="co bl"></div><div class="co br"></div>
+      </div>
+    </div>
+  </div>
 
-        async function startSystem() {
-            statusIndicator.innerText = "Starting Camera...";
-            try {
-                const response = await fetch('/start', { method: 'POST' });
-                const data = await response.json();
-                updateUI(data.running, data.latest_speech, data.error, response.ok && data.running);
-            } catch (err) {
-                console.error(err);
-                statusIndicator.innerText = "Error: Could not start camera";
-            }
-        }
+  <div class="side">
+    <div class="card">
+      <div class="chdr">System Metrics</div>
+      <div class="sg">
+        <div class="sv"><div class="sn nc1" id="sdet">0</div><div class="sl">Detections</div></div>
+        <div class="sv"><div class="sn nc3" id="sup">00:00</div><div class="sl">Uptime</div></div>
+        <div class="sv"><div class="sn nc2" id="salr">0</div><div class="sl">Alerts</div></div>
+        <div class="sv"><div class="sn nc4" id="sfps">—</div><div class="sl">FPS</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="chdr">System Control</div>
+      <div class="cb">
+        <button class="btn btn-s" id="bstart" onclick="startSys()">▶ &nbsp;Start Detection</button>
+        <button class="btn btn-x" id="bstop" onclick="stopSys()" disabled>■ &nbsp;Stop Detection</button>
+      </div>
+    </div>
+    <div class="card" style="flex:1">
+      <div class="chdr">Voice Alert Log</div>
+      <div class="log" id="log">
+        <div class="le" id="le">No alerts yet</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<div id="toast"></div>
 
-        async function stopSystem() {
-            statusIndicator.innerText = "Stopping Camera...";
-            try {
-                const response = await fetch('/stop', { method: 'POST' });
-                const data = await response.json();
-                updateUI(data.running, data.latest_speech, data.error, false);
-            } catch (err) {
-                console.error(err);
-            }
-        }
+<script>
+/* ═══════════ CANVAS SCENE ═══════════ */
+const C = document.getElementById('scene');
+const ctx = C.getContext('2d');
+C.width = 440; C.height = 290;
 
-        // Periodically check status every 2 seconds to keep UI synced
-        setInterval(fetchStatus, 2000);
-        
-        // Initial status check
-        fetchStatus();
-    </script>
+let frame = 0, sysOn = false;
+const bubbles = [], particles = [];
+const SPEECHES = [
+  'Person detected ahead','Clear path — safe to walk',
+  'Chair on your left','Door 2 metres to the right',
+  'Bicycle obstacle ahead','Steps detected — be careful',
+  'Traffic signal: red','Human at 1.5 metres',
+  'Bench on your right','Car passing — wait'
+];
+let lastBubble = 0;
+
+function addBubble(text, x, y, color) {
+  bubbles.push({text, x, y, color, life:0, max:170});
+}
+function spawnPart(x,y,color) {
+  for(let i=0;i<6;i++) particles.push({x,y,vx:(Math.random()-.5)*3,vy:-Math.random()*3-1,r:Math.random()*3+1,color,life:0,max:55});
+}
+
+function drawPerson(px, py, tick) {
+  const bob = Math.sin(tick*0.11)*2.5;
+  const ls = Math.sin(tick*0.11);
+  ctx.save(); ctx.translate(px, py+bob);
+
+  // shadow
+  ctx.beginPath(); ctx.ellipse(0,0,20,5,0,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fill();
+
+  // legs
+  const ll = -6 + ls*10, lr = 6 - ls*10;
+  ctx.lineWidth=7; ctx.lineCap='round'; ctx.strokeStyle='#1e3a6e';
+  ctx.beginPath(); ctx.moveTo(-6,-22); ctx.lineTo(ll,0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(6,-22); ctx.lineTo(lr,0); ctx.stroke();
+  // shoes
+  ctx.fillStyle='#1a1a2e';
+  ctx.beginPath(); ctx.ellipse(ll,0,8,3,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(lr,0,8,3,0,0,Math.PI*2); ctx.fill();
+
+  // body — gradient-like using layered rects
+  ctx.fillStyle='#3b82f6';
+  ctx.beginPath(); ctx.roundRect(-13,-55,26,36,5); ctx.fill();
+  // shirt highlight
+  ctx.fillStyle='rgba(147,197,253,0.15)';
+  ctx.beginPath(); ctx.roundRect(-10,-55,12,36,5); ctx.fill();
+
+  // arms
+  const aw = Math.sin(tick*0.11+Math.PI)*12;
+  ctx.lineWidth=6; ctx.strokeStyle='#3b82f6'; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(-13,-44); ctx.lineTo(-18+aw*.3,-28); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(13,-44); ctx.lineTo(18-aw*.3,-28); ctx.stroke();
+  // hands
+  ctx.fillStyle='#f4a96a';
+  ctx.beginPath(); ctx.arc(-18+aw*.3,-28,4,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(18-aw*.3,-28,4,0,Math.PI*2); ctx.fill();
+
+  // cane (left hand)
+  const caneSwing = Math.sin(tick*0.07)*20;
+  const cx2 = -18+aw*.3, cy2 = -28;
+  const ctx2 = cx2 + Math.sin(caneSwing*Math.PI/180)*45;
+  const cty2 = cy2 + Math.cos(caneSwing*Math.PI/180)*45;
+  ctx.lineWidth=2.5; ctx.strokeStyle='#ffffff';
+  ctx.beginPath(); ctx.moveTo(cx2,cy2); ctx.lineTo(ctx2,cty2); ctx.stroke();
+  // cane tip — colorful dot
+  const tipColors=['#ff6b9d','#a855f7','#06b6d4'];
+  ctx.fillStyle=tipColors[Math.floor(frame/30)%3];
+  ctx.beginPath(); ctx.arc(ctx2,cty2,4.5,0,Math.PI*2); ctx.fill();
+
+  // head
+  ctx.fillStyle='#f4a96a';
+  ctx.beginPath(); ctx.arc(0,-68,15,0,Math.PI*2); ctx.fill();
+  // hair
+  ctx.fillStyle='#2d1b0e';
+  ctx.beginPath(); ctx.arc(0,-72,15,Math.PI,0); ctx.fill();
+  ctx.beginPath(); ctx.arc(-7,-70,5,Math.PI,0); ctx.fill();
+  // sunglasses
+  ctx.fillStyle='rgba(0,0,0,.75)';
+  ctx.beginPath(); ctx.roundRect(-14,-71,11,8,3); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(3,-71,11,8,3); ctx.fill();
+  // glasses bridge
+  ctx.strokeStyle='rgba(100,100,100,.8)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(-3,-67); ctx.lineTo(3,-67); ctx.stroke();
+  // glasses shine
+  ctx.fillStyle='rgba(255,255,255,.2)';
+  ctx.beginPath(); ctx.roundRect(-13,-70,4,3,1); ctx.fill();
+
+  ctx.restore();
+}
+
+function drawDog(dx, dy, tick) {
+  const bob = Math.sin(tick*0.11+1)*1.8;
+  const ls = Math.sin(tick*0.11);
+  ctx.save(); ctx.translate(dx, dy+bob);
+
+  // tail wag
+  const tw = Math.sin(tick*0.18)*22;
+  ctx.lineWidth=5; ctx.strokeStyle='#a07840'; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(22,-12); ctx.quadraticCurveTo(30,-22,28+tw*.4,-35); ctx.stroke();
+
+  // body
+  ctx.fillStyle='#c8a06a';
+  ctx.beginPath(); ctx.ellipse(0,-12,23,11,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#e8c896';
+  ctx.beginPath(); ctx.ellipse(0,-10,14,7,0,0,Math.PI*2); ctx.fill();
+
+  // legs
+  ctx.lineWidth=5; ctx.strokeStyle='#a07840';
+  [-15,-7,7,15].forEach((lx,i)=>{
+    const sw=(i%2===0?ls:-ls)*6;
+    ctx.beginPath(); ctx.moveTo(lx,-22); ctx.lineTo(lx+sw,0); ctx.stroke();
+    ctx.fillStyle='#333';
+    ctx.beginPath(); ctx.ellipse(lx+sw,0,5,2.5,0,0,Math.PI*2); ctx.fill();
+  });
+
+  // head
+  ctx.fillStyle='#c8a06a';
+  ctx.beginPath(); ctx.ellipse(-21,-16,13,10,-0.25,0,Math.PI*2); ctx.fill();
+  // snout
+  ctx.fillStyle='#d4a06a';
+  ctx.beginPath(); ctx.ellipse(-29,-16,7,5,0,0,Math.PI*2); ctx.fill();
+  // nose
+  ctx.fillStyle='#1a1a1a';
+  ctx.beginPath(); ctx.arc(-32,-14,2.5,0,Math.PI*2); ctx.fill();
+  // eye
+  ctx.fillStyle='#222';
+  ctx.beginPath(); ctx.arc(-25,-18,2.5,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.6)';
+  ctx.beginPath(); ctx.arc(-24,-19,1,0,Math.PI*2); ctx.fill();
+  // ear
+  ctx.fillStyle='#a07840';
+  ctx.beginPath(); ctx.ellipse(-19,-24,5,9,-0.3,0,Math.PI*2); ctx.fill();
+
+  // harness
+  ctx.strokeStyle='#8b5cf6'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.ellipse(0,-12,15,9,0,0,Math.PI*2); ctx.stroke();
+  // harness cross
+  ctx.beginPath(); ctx.moveTo(0,-21); ctx.lineTo(0,-3); ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawBox(x,y,w,h,lbl,col,a=1){
+  ctx.save(); ctx.globalAlpha=a;
+  ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.strokeRect(x,y,w,h);
+  const cl=10;
+  ctx.lineWidth=2.5;
+  [[x,y,1,1],[x+w,y,-1,1],[x,y+h,1,-1],[x+w,y+h,-1,-1]].forEach(([cx,cy,sx,sy])=>{
+    ctx.beginPath(); ctx.moveTo(cx+sx*cl,cy); ctx.lineTo(cx,cy); ctx.lineTo(cx,cy+sy*cl); ctx.stroke();
+  });
+  const tw=ctx.measureText(lbl).width+12;
+  ctx.fillStyle=col; ctx.beginPath(); ctx.roundRect(x,y-19,tw,19,3); ctx.fill();
+  ctx.fillStyle='#000'; ctx.font='bold 10px JetBrains Mono,monospace'; ctx.textBaseline='middle';
+  ctx.fillText(lbl,x+6,y-9);
+  ctx.restore();
+}
+
+function drawBubble(b){
+  ctx.save();
+  ctx.font='bold 11px Outfit,sans-serif';
+  const tw=ctx.measureText(b.text).width+20, th=28;
+  const bx=b.x-tw/2, by=b.y-58;
+  const a=b.life<20?b.life/20:b.life>b.max-30?(b.max-b.life)/30:1;
+  ctx.globalAlpha=a;
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,0.5)';
+  ctx.beginPath(); ctx.roundRect(bx+2,by+2,tw,th,8); ctx.fill();
+  // bubble
+  ctx.fillStyle=b.color;
+  ctx.beginPath(); ctx.roundRect(bx,by,tw,th,8); ctx.fill();
+  // tail
+  ctx.beginPath(); ctx.moveTo(b.x-6,by+th); ctx.lineTo(b.x,by+th+9); ctx.lineTo(b.x+6,by+th); ctx.fill();
+  // text
+  ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(b.text,b.x,by+14);
+  ctx.restore();
+}
+
+function drawSonarRings(cx,cy){
+  [50,100,150].forEach((r,i)=>{
+    const prog=(frame+i*40)%120/120;
+    const a=(1-prog)*0.25;
+    ctx.beginPath(); ctx.arc(cx,cy,r*(0.5+prog*.7),0,Math.PI*2);
+    ctx.strokeStyle=`rgba(6,182,212,${a})`; ctx.lineWidth=1.2; ctx.stroke();
+  });
+}
+
+function drawSpectrumBar(){
+  const g=ctx.createLinearGradient(0,0,C.width,0);
+  g.addColorStop(0,'#ff6b9d'); g.addColorStop(.25,'#a855f7');
+  g.addColorStop(.5,'#06b6d4'); g.addColorStop(.75,'#10b981'); g.addColorStop(1,'#f59e0b');
+  ctx.fillStyle=g; ctx.fillRect(0,C.height-4,C.width,4);
+}
+
+function drawAINodes(){
+  const nodes=[{x:25,y:28,l:'AI',c:'#a855f7',p:0},{x:410,y:22,l:'CV',c:'#06b6d4',p:2},{x:415,y:218,l:'TTS',c:'#10b981',p:4}];
+  nodes.forEach(n=>{
+    const ny=n.y+Math.sin(frame*.025+n.p)*7;
+    ctx.save();
+    ctx.globalAlpha=.75;
+    ctx.fillStyle=n.c+'22'; ctx.strokeStyle=n.c; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.roundRect(n.x-16,ny-11,32,22,5); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=n.c; ctx.font='bold 10px Outfit,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(n.l,n.x,ny);
+    ctx.restore();
+  });
+}
+
+function tick(){
+  ctx.clearRect(0,0,C.width,C.height);
+  frame++;
+
+  // ground
+  ctx.fillStyle='#0d1828'; ctx.fillRect(0,230,C.width,60);
+  ctx.strokeStyle='#1d2f48'; ctx.lineWidth=1;
+  for(let i=0;i<10;i++){
+    const gx=((i*50)+(frame*.8))%C.width;
+    ctx.beginPath(); ctx.moveTo(gx,230); ctx.lineTo(gx,290); ctx.stroke();
+  }
+  ctx.strokeStyle='rgba(30,55,90,.9)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(0,230); ctx.lineTo(C.width,230); ctx.stroke();
+  drawSpectrumBar();
+
+  if(sysOn) drawSonarRings(C.width/2,160);
+
+  drawPerson(115,230,frame);
+  drawDog(220,230,frame);
+
+  // leash
+  ctx.strokeStyle='#8b5cf6'; ctx.lineWidth=2.5; ctx.setLineDash([5,4]);
+  ctx.beginPath(); ctx.moveTo(115+14,230-42); ctx.quadraticCurveTo(168,196,220-22,230-14); ctx.stroke();
+  ctx.setLineDash([]);
+
+  if(sysOn){
+    const ba=.65+Math.sin(frame*.05)*.1;
+    drawBox(75,150,85,80,'person #a855f7',ba);
+    drawBox(185,158,75,72,'dog #06b6d4',.6+Math.sin(frame*.07+1)*.1);
+
+    // particles trigger
+    if(frame%18===0){
+      spawnPart(115+Math.random()*20,185,'#ff6b9d');
+      spawnPart(220+Math.random()*15,188,'#06b6d4');
+    }
+    if(frame-lastBubble>160){
+      const s=SPEECHES[Math.floor(Math.random()*SPEECHES.length)];
+      const cols=['#a855f7','#06b6d4','#ff6b9d','#10b981'];
+      addBubble(s,115+Math.random()*110,148,cols[Math.floor(Math.random()*4)]);
+      lastBubble=frame;
+      updateTicker(s);
+    }
+  }
+
+  // bubbles
+  for(let i=bubbles.length-1;i>=0;i--){
+    bubbles[i].life++;
+    drawBubble(bubbles[i]);
+    if(bubbles[i].life>=bubbles[i].max) bubbles.splice(i,1);
+  }
+
+  // particles
+  ctx.save();
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx; p.y+=p.vy; p.vy+=.12; p.life++;
+    ctx.globalAlpha=Math.max(0,1-p.life/p.max);
+    ctx.fillStyle=p.color;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+    if(p.life>=p.max) particles.splice(i,1);
+  }
+  ctx.restore();
+
+  drawAINodes();
+  requestAnimationFrame(tick);
+}
+tick();
+
+/* ═══════════ UI STATE ═══════════ */
+let running=false, st=null, utTimer=null, dets=0, alts=0, lastSp='';
+
+function updateTicker(t){
+  const el=document.getElementById('tick-txt');
+  el.innerHTML=''; const s=document.createElement('span');
+  s.textContent=t; el.appendChild(s);
+}
+
+function toast(m){
+  const t=document.getElementById('toast');
+  t.textContent=m; t.classList.add('s');
+  setTimeout(()=>t.classList.remove('s'),2600);
+}
+
+function addLog(m,type='o'){
+  const lb=document.getElementById('log'), le=document.getElementById('le');
+  if(le) le.remove();
+  const now=new Date();
+  const ts=now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const cl=type==='s'?'lc-s':type==='w'?'lc-w':'lc-o';
+  const tag=type==='s'?'SYS':type==='w'?'WARN':'OBJ';
+  const d=document.createElement('div'); d.className='li';
+  d.innerHTML=`<span class="lt">${ts}</span><span class="lm"><span class="lc ${cl}">${tag}</span>${m}</span>`;
+  lb.appendChild(d); lb.scrollTop=lb.scrollHeight;
+  alts++; document.getElementById('salr').textContent=alts;
+}
+
+function setUI(on){
+  running=on; sysOn=on;
+  const sp=document.getElementById('spill');
+  sp.className='sys-pill'+(on?' on':'');
+  document.getElementById('spill-txt').textContent=on?'Online':'Offline';
+  document.getElementById('sdot').className='strip-dot'+(on?' on':'');
+  const stxt=document.getElementById('stxt');
+  stxt.className='strip-txt'+(on?' on':'');
+  stxt.textContent=on?'System active — detection running':'System offline';
+  document.getElementById('stag').textContent=on?'LIVE':'Standby';
+  const rec=document.getElementById('rec');
+  rec.innerHTML=`<div class="d"></div><span>${on?'REC':'Standby'}</span>`;
+  if(on) rec.classList.add('live'); else rec.classList.remove('live');
+  document.getElementById('scn').className='scan'+(on?' a':'');
+  document.getElementById('camcard').className='cam'+(on?' run':'');
+  document.getElementById('scene-lbl').textContent=on?'AI detection active':'Press START to activate AI detection';
+  const vf=document.getElementById('vf'), fidl=document.getElementById('fidl');
+  if(on){
+    vf.src='/video_feed?'+Date.now(); vf.classList.add('v'); fidl.classList.add('h');
+    document.getElementById('sfps').textContent='~30';
+    st=Date.now();
+    utTimer=setInterval(()=>{
+      const e=Math.floor((Date.now()-st)/1000);
+      const m=String(Math.floor(e/60)).padStart(2,'0'), s=String(e%60).padStart(2,'0');
+      document.getElementById('sup').textContent=`${m}:${s}`;
+    },1000);
+  } else {
+    vf.src=''; vf.classList.remove('v'); fidl.classList.remove('h');
+    document.getElementById('sfps').textContent='—';
+    clearInterval(utTimer);
+    document.getElementById('sup').textContent='00:00';
+    dets=0; alts=0;
+    document.getElementById('sdet').textContent='0';
+    document.getElementById('salr').textContent='0';
+    updateTicker('System stopped — press START to resume');
+  }
+  document.getElementById('bstart').disabled=on;
+  document.getElementById('bstop').disabled=!on;
+}
+
+async function startSys(){
+  document.getElementById('bstart').disabled=true;
+  try{
+    const r=await fetch('/start',{method:'POST'});
+    const d=await r.json();
+    if(d.status==='Started'||d.running===true){
+      setUI(true);
+      addLog('Vision system initialized','s');
+      addLog('YOLO v3 model loaded — ready','s');
+      toast('Detection started');
+    } else {
+      toast('Error: '+(d.error||'Could not start'));
+      document.getElementById('bstart').disabled=false;
+    }
+  } catch(e){
+    toast('Flask not reachable — is your server running?');
+    document.getElementById('bstart').disabled=false;
+  }
+}
+
+async function stopSys(){
+  document.getElementById('bstop').disabled=true;
+  try{
+    await fetch('/stop',{method:'POST'});
+    setUI(false);
+    addLog('System stopped by user','s');
+    toast('Detection stopped');
+  } catch(e){
+    toast('Could not reach Flask server');
+    document.getElementById('bstop').disabled=false;
+  }
+}
+
+async function poll(){
+  if(!running) return;
+  try{
+    const r=await fetch('/status'); const d=await r.json();
+    if(d.latest_speech&&d.latest_speech!==lastSp){
+      lastSp=d.latest_speech;
+      addLog(d.latest_speech,'o');
+      updateTicker(d.latest_speech);
+      dets++; document.getElementById('sdet').textContent=dets;
+    }
+  }catch(_){}
+}
+setInterval(poll,3000);
+</script>
 </body>
 </html>
