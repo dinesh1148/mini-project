@@ -1,0 +1,5 @@
+path: datasets/voc2012
+train: images/train
+val: images/val
+nc: 20
+names: ['background', 'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']

@@ -1,0 +1,27 @@
+# Compiled Python files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Data and large weights
+*.weights
+*.pt
+datasets/
+VOC2012/
+uploads/
+runs/
+
+# Logs
+*.log
+
+# IDE files
+.vscode/
+.idea/
+
+# Large notebooks if they cause issues (optional, keeping for now unless >100MB)
+# yolo-v3-object-detection-in-tensorflow.ipynb

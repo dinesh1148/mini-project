@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Assistive Vision</title>
+    <!-- Use Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+</head>
+<body>
+
+    <div class="container" role="main">
+        <h1 tabindex="0" style="font-size: 3rem;">Real-Time Object Detection</h1>
+        <p class="subtitle" tabindex="0">Voice Assistance System for Visually Impaired People</p>
+        
+        <div class="illustrations">
+            <div class="icon-wrapper sonar-avatar">
+                <div class="sonar-ring"></div>
+                <div class="sonar-ring delay"></div>
+                <img src="{{ url_for('static', filename='blind_person.png') }}" alt="Visually Impaired Person" class="animated-img float-anim" />
+            </div>
+            <div class="icon-wrapper">
+                <img src="{{ url_for('static', filename='guide_dog.png') }}" alt="Guide Dog Assistance" class="animated-img swing-anim" />
+            </div>
+            <div class="icon-wrapper">
+                <img src="{{ url_for('static', filename='sunglasses.png') }}" alt="Smart Sunglasses" class="animated-img pulse-anim" />
+            </div>
+        </div>
+        
+        <div id="status-indicator" class="status-badge" aria-live="polite" tabindex="0">
+            System Status: Disconnected
+        </div>
+        
+        <div id="caption-box" class="caption-box" aria-live="polite" tabindex="0" style="display: none;">
+            <div class="caption-text" id="caption-text">Waiting for detection...</div>
+            <div class="audio-visualizer">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+        </div>
+
+        <div class="btn-container">
+            <button id="btn-start" aria-label="Start System Camera and Voice" onclick="startSystem()">
+                Start 
+            </button>
+            <button id="btn-stop" aria-label="Stop System Camera and Voice" onclick="stopSystem()">
+                Stop
+            </button>
+        </div>
+
+        <div class="video-container" style="margin-top: 20px; text-align: center;">
+            <img id="video-feed" src="" alt="Camera Feed" style="display: none; max-width: 100%; border-radius: 8px; border: 2px solid #ccc;" />
+        </div>
+    </div>
+
+    <!-- JS for API Control -->
+    <script>
+        const statusIndicator = document.getElementById('status-indicator');
+
+        async function fetchStatus() {
+            try {
+                const response = await fetch('/status');
+                const data = await response.json();
+                updateUI(data.running, data.latest_speech, data.error, data.camera_ready);
+            } catch (err) {
+                statusIndicator.innerText = "Error: Backend Offline";
+                statusIndicator.className = "status-badge";
+            }
+        }
+
+        function updateUI(isRunning, latestSpeech, error, cameraReady = false) {
+            const videoFeed = document.getElementById('video-feed');
+            const captionBox = document.getElementById('caption-box');
+            if (error) {
+                statusIndicator.innerText = `Camera Error: ${error}`;
+                statusIndicator.className = "status-badge";
+                videoFeed.style.display = 'none';
+                videoFeed.src = '';
+                captionBox.style.display = 'block';
+                document.getElementById('caption-text').innerText = latestSpeech || error;
+                return;
+            }
+
+            if (isRunning) {
+                statusIndicator.innerText = cameraReady
+                    ? "System is active and camera is ready"
+                    : "System is starting";
+                statusIndicator.className = "status-badge active";
+                videoFeed.style.display = 'inline-block';
+                // Display the voice log captions
+                captionBox.style.display = 'block';
+                const capText = document.getElementById('caption-text');
+                if (latestSpeech && capText.innerText !== latestSpeech) {
+                    capText.innerText = latestSpeech;
+                    // Pulse animation to highlight the new speech
+                    captionBox.animate([
+                        { transform: 'scale(1)', boxShadow: '0 0 20px rgba(0, 242, 254, 0.1)', borderColor: 'rgba(0, 242, 254, 0.3)' },
+                        { transform: 'scale(1.05)', boxShadow: '0 0 40px rgba(0, 242, 254, 0.9)', borderColor: 'rgba(0, 242, 254, 1)' },
+                        { transform: 'scale(1)', boxShadow: '0 0 20px rgba(0, 242, 254, 0.1)', borderColor: 'rgba(0, 242, 254, 0.3)' }
+                    ], { duration: 600, easing: 'ease-in-out' });
+                }
+                
+                // Only set src if not already set to prevent reloading the stream unnecessarily
+                if (videoFeed.getAttribute('src') !== '/video_feed') {
+                    videoFeed.src = '/video_feed';
+                }
+            } else {
+                statusIndicator.innerText = "System is currently OFF";
+                statusIndicator.className = "status-badge";
+                videoFeed.style.display = 'none';
+                videoFeed.src = '';
+                captionBox.style.display = 'none';
+                document.getElementById('caption-text').innerText = 'Waiting for detection...';
+            }
+        }
+
+        async function startSystem() {
+            statusIndicator.innerText = "Starting Camera...";
+            try {
+                const response = await fetch('/start', { method: 'POST' });
+                const data = await response.json();
+                updateUI(data.running, data.latest_speech, data.error, response.ok && data.running);
+            } catch (err) {
+                console.error(err);
+                statusIndicator.innerText = "Error: Could not start camera";
+            }
+        }
+
+        async function stopSystem() {
+            statusIndicator.innerText = "Stopping Camera...";
+            try {
+                const response = await fetch('/stop', { method: 'POST' });
+                const data = await response.json();
+                updateUI(data.running, data.latest_speech, data.error, false);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Periodically check status every 2 seconds to keep UI synced
+        setInterval(fetchStatus, 2000);
+        
+        // Initial status check
+        fetchStatus();
+    </script>
+</body>
+</html>
